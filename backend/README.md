@@ -6,10 +6,15 @@
 python3 -m venv .venv
 Linux - source .venv/bin/activate || Windows - .venv\Scripts\activate
 pip3 install -r req.txt
-fastapi dev main.py
 ```
 
 2. Setup the environment keys / models , make the **.env** file as in **env.example**
+
+3. Run
+
+```
+fastapi dev main.py
+```
 
 # Endpoints
 
