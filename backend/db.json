@@ -1,0 +1,44 @@
+{
+  "questions": [
+    {
+      "question": "What types of insurance policies does ByteMe Insurance offer?",
+      "answer": "ByteMe Insurance provides auto, home, health, life, and travel insurance policies tailored to individual and business needs."
+    },
+    {
+      "question": "How can I file an insurance claim with ByteMe Insurance?",
+      "answer": "You can file a claim through our online portal, by calling our 24/7 customer support line, or by visiting one of our local offices."
+    },
+    {
+      "question": "What documents do I need to submit when filing a claim?",
+      "answer": "Typically, you’ll need your policy number, a government-issued ID, proof of incident (such as a police report or medical report), and supporting bills or receipts."
+    },
+    {
+      "question": "How long does it take ByteMe Insurance to process a claim?",
+      "answer": "Most claims are reviewed within 5 business days, and payouts are typically processed within 10 to 14 business days depending on complexity."
+    },
+    {
+      "question": "Does ByteMe Insurance offer discounts for safe drivers?",
+      "answer": "Yes, we offer discounts for drivers with clean records, students with good grades, and customers who complete defensive driving courses."
+    },
+    {
+      "question": "Can I bundle multiple insurance policies with ByteMe Insurance?",
+      "answer": "Yes, bundling auto, home, and life insurance policies can save customers up to 25% on premiums."
+    },
+    {
+      "question": "Does ByteMe Insurance cover natural disasters such as floods or earthquakes?",
+      "answer": "Flood and earthquake coverage are not included in standard policies but can be added as optional riders."
+    },
+    {
+      "question": "What is the difference between term life and whole life insurance?",
+      "answer": "Term life insurance provides coverage for a fixed period (e.g., 20 years), while whole life insurance covers you for your entire lifetime and builds cash value."
+    },
+    {
+      "question": "How do I update my personal details or beneficiary information?",
+      "answer": "You can update your profile through the ByteMe Insurance customer portal or by contacting your assigned insurance advisor."
+    },
+    {
+      "question": "Does ByteMe Insurance offer health insurance plans for small businesses?",
+      "answer": "Yes, we provide group health insurance packages designed for small and medium-sized businesses with flexible premium options."
+    }
+  ]
+}
