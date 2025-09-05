@@ -11,7 +11,12 @@ async def root_fallback():
                              media_type="text/xml")
 
 
-# --- A) Built-in STT: voice webhook + handlers ---
+"""
+
+route that gets triggered when the user calls
+
+"""
+
 @app.post("/voice", response_class=PlainTextResponse)
 async def voice():
     twiml = """
@@ -24,11 +29,27 @@ async def voice():
 """.strip()
     return PlainTextResponse(twiml, media_type="text/xml")
 
+
+
 @app.post("/partial")
 async def partial(request: Request):
     form = await request.form()
-    print("Partial:", dict(form))  # shows partial transcripts in your terminal
+    print("Partial:", dict(form))
     return PlainTextResponse("", status_code=204)
+
+
+"""
+
+params:
+    request -> the voice input of the user who called
+
+Sends caller input to the backend
+
+returns:
+    trasncript of what the caller said
+
+"""
+
 
 @app.post("/handle-intent", response_class=PlainTextResponse)
 async def handle_intent(request: Request):
@@ -39,7 +60,6 @@ async def handle_intent(request: Request):
 
     print("Transcript:", transcript)
 
-    # 🔹 Forward to your friend’s ngrok endpoint
     async with httpx.AsyncClient() as client:
         await client.post(
             "https://88cc1c106304.ngrok-free.app/rsp",
@@ -48,7 +68,7 @@ async def handle_intent(request: Request):
                 }
         )
 
-    # Respond back to Twilio so the caller hears something
+
     reply = f"You said: {transcript}"
     twiml = f"<Response><Say>{reply}</Say><Redirect>/voice</Redirect></Response>"
     return PlainTextResponse(twiml, media_type="text/xml")
