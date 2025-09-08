@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 import httpx
+from twilio.twiml.voice_response import VoiceResponse,  Gather
 
 app = FastAPI()
-
+BASE_URL = 'https://490ad57e843e.ngrok-free.app'
 
 @app.post("/", response_class=PlainTextResponse)
 async def root_fallback():
@@ -17,8 +18,25 @@ route that gets triggered when the user calls -> listed under "When a call comes
 
 """
 
+firstQuestion : bool = True
+
 @app.post("/voice", response_class=PlainTextResponse)
 async def voice() -> PlainTextResponse:
+    global firstQuestion
+    resp = VoiceResponse()
+    gather = Gather(input="speech", action="/handle-intent", partialResultCallback="/partial", timeout="5", speechTimeout="auto")
+
+    if firstQuestion:
+        gather.say('Hi! Tell me what you need.')
+        firstQuestion = False
+    else:
+        gather.say('Can I help you with something else?')
+    
+    resp.append(gather)
+    resp.say("Sorry, I didn't catch that.")
+
+    return PlainTextResponse(str(resp), media_type="text/xml")
+
     twiml = """
 <Response>
   <Gather input="speech" action="/handle-intent" partialResultCallback="/partial" timeout="5" speechTimeout="auto">
@@ -36,6 +54,7 @@ async def partial(request: Request) -> PlainTextResponse:
     form = await request.form()
     print("Partial:", dict(form))
     return PlainTextResponse("", status_code=204)
+
 
 
 """
@@ -60,7 +79,7 @@ async def handle_intent(request: Request) -> PlainTextResponse:
 
     async with httpx.AsyncClient() as client:
         res = await client.post(
-            "https://3d6732d25766.ngrok-free.app/rsp",
+            f"{BASE_URL}/rsp",
             json={
                   "text": transcript
                 },
@@ -98,20 +117,25 @@ async def call_status(request: Request) -> PlainTextResponse:
     call_sid = form.get("CallSid")
     call_status = form.get("CallStatus")
     duration = form.get("CallDuration")
+    call_number = form.get("From", "")
 
-    print(f"Call {call_sid} ended with status={call_status}, duration={duration}")
+    global firstQuestion
+
+    print(f"Call {call_sid} ended with status={call_status}, duration={duration}, call_number={call_number}")
 
     if call_status == "completed":
         async with httpx.AsyncClient() as client:
             try:
                 await client.post(
-                    "https://3d6732d25766.ngrok-free.app/stop_call",
+                    f"{BASE_URL}/stop_call",
                     json={
-                        'text': 'End of call'
+                        'text': call_number
                     },
                     timeout=10
                 )
             except Exception as e:
                 print("Failed to forward end-of-call event:", e)
+                
+    firstQuestion = True
 
     return PlainTextResponse("", status_code=204)
