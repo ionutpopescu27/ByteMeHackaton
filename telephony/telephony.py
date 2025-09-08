@@ -13,7 +13,7 @@ async def root_fallback():
 
 """
 
-route that gets triggered when the user calls
+route that gets triggered when the user calls -> listed under "When a call comes in" on the Twilio phone number
 
 """
 
@@ -21,7 +21,7 @@ route that gets triggered when the user calls
 async def voice():
     twiml = """
 <Response>
-  <Gather input="speech" action="/handle-intent" partialResultCallback="/partial">
+  <Gather input="speech" action="/handle-intent" partialResultCallback="/partial" timeout="5" speechTimeout="auto">
     <Say>Hi! Tell me what you need.</Say>
   </Gather>
   <Say>Sorry, I didn't catch that.</Say>
@@ -61,15 +61,20 @@ async def handle_intent(request: Request):
     print("Transcript:", transcript)
 
     async with httpx.AsyncClient() as client:
-        await client.post(
-            "https://88cc1c106304.ngrok-free.app/rsp",
+        res = await client.post(
+            "https://3d6732d25766.ngrok-free.app/rsp",
             json={
                   "text": transcript,
                 }
         )
+        data = res.json()
+        reply = data.get('text', "Sorry, I didn't get a reply.")
 
-
-    reply = f"You said: {transcript}"
-    twiml = f"<Response><Say>{reply}</Say><Redirect>/voice</Redirect></Response>"
+    twiml = f"""
+<Response>
+  <Say>{reply}</Say>
+  <Redirect method="POST">/voice</Redirect>
+</Response>
+""".strip()
     return PlainTextResponse(twiml, media_type="text/xml")
 
