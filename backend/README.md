@@ -18,7 +18,37 @@ fastapi dev main.py
 
 # Endpoints
 
-- Response from llm  
+- Query on db + LLM response
+
+```
+POST : http://127.0.0.1:8000/rsp_db
+Json Body Request: 
+{
+  "text": "Documents required to support a claim",
+  "collection_name": "docs_824bea41-28d0-4a58-a459-bd50e857e6d2",
+  "k": 3
+}
+Json Body Response:
+{
+  "text": "The documents required to support a claim are identification of the claimant and a police accident report."
+}
+```
+
+- Save the pdfs to a chroma db collection
+
+```
+POST : http://127.0.0.1:8000/populate_chroma 
+Json Body Request:
+{
+  "paths": ["/home/alex/projects/hackaton_endava/backend/tmp_databases/Insurance.pdf"]
+}
+Json Body Response:
+{
+  "text":"docs_824bea41-28d0-4a58-a459-bd50e857e6d2"
+}
+```
+
+- Simple FAQ response from llm  
 
 ```
 POST : http://127.0.0.1:8000/rsp

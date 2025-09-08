@@ -4,7 +4,8 @@
 
 = _Idei_
 
-+ frontend: platforma sa te poti conecta cu numarul de telefon si acolo sa ai un dashboard cu toate companiile la care ai apelat + diferite documente salvate special pentru tine ,din rag , putem salva direct path-urile (sa ai si verificare pe sms, nuj cum putem sparge asta, citim pe net)
++ frontend: platforma sa te poti conecta cu numarul de telefon si acolo sa ai un dashboard cu toate companiile la care ai apelat + diferite documente salvate special pentru tine
+
 + backend 
  - asr automatic speech recogniziton - whisper e gratis 
  - rag (chroma db pentru a stoca embedding-uri la diferite documente)
@@ -20,7 +21,7 @@
 
 + Document cu detaliile avute din conversatie, pe care un broker ar putea sa ,generare de raport pe baza de conversatie, o lista sa fie sunati pentru detalii 
 
-+ Facem un flow foarte specific, sa zica la final o tampanie, improvements 
++ Facem un flow foarte specific, sa zica la final o tampanie, sa gandim mereu ce imbunatatiri putem avea 
 
 + Voice log-uri pe backend, daca s-o blocat unde si de ce?
 

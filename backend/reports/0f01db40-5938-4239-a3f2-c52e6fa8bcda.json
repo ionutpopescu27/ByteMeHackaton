@@ -1,0 +1,26 @@
+{
+  "id": "0f01db40-5938-4239-a3f2-c52e6fa8bcda",
+  "timestamp": "2025-09-07T13:21:34.023656Z",
+  "query": "Documents required to support a claim",
+  "collection_name": "docs_824bea41-28d0-4a58-a459-bd50e857e6d2",
+  "k": 3,
+  "matches": [
+    {
+      "rank": 1,
+      "text": "Reporting the accident starts off the claim process because all the other parties involved have specific roles to play. After giving notice to the insurer, you will be required to fill an accident report form providing the following details; • Facts about of the accident; • Particulars of date, nature and circumstances of the accident; • Any other details the insurer may reasonably require in relation to the accident. d) Documents required to support a claim 1. The accident victim (if possible) or his/her representative presents the following documents to the insurer to claim or seek compensation; Identification of the claimant; Police accident report- It gives particulars of the vehicles involved, drivers, owners, insurers, victims, extent of injury, the party to blame, the insurance sticker among others. Note: All costs incurred in obtaining the police report are reimbursed by the insurer and forms part of the"
+    },
+    {
+      "rank": 2,
+      "text": "place, the claimant has an option of recourse to courts of law against the vehicle/motorcycle owner, for the amount over and above the said limits."
+    },
+    {
+      "rank": 3,
+      "text": "All vehicles/motorcycle owners are therefore encouraged to secure insurance policies for improved limits since the Motor Third Party limits are usually low. f) Motor Comprehensive Insurance This motor Insurance policy covers the vehicle and its occupants against damages or losses arising from unforeseen calamities. It also covers third party injury and/or death as well as third party property damage. It is therefore prudent to purchase a Comprehensive Motor Insurance policy. g) How long does it take to settle a claim? The law provides that once all documentation has been submitted, accurate and with undisputed, the insurer will settle a claim within sixty (60) days of reporting the incident. In cases where disputes arise, the claim should be settled within thirty (30) days after the dispute is settled."
+    }
+  ],
+  "summary": "Reporting the accident starts off the claim process because all the other parties involved have specific roles to play. After giving notice to the insurer, you will be required to fill an accident report form providing the following details; • Facts about of the accident; • Particulars of date, nature and circumstances of the accident; • Any other details the insurer may reasonably require in relation to the accident. d) Documents required to support a claim 1. The accident victim (if possible) or his/her representative presents the following documents to the insurer to claim or seek compensation; Identification of the claimant; Police accident report- It gives particulars of the vehicles involved, drivers, owners, insurers, victims, extent of injury, the party to blame, the insurance sticker among others. Note: All costs incurred in obtaining the police report are reimbursed by the insurer and forms part of the place, the claimant has an option of recourse to courts of law against the vehicle/motorcycle owner, for the amount over and above the said limits. All vehicles/motorcycle owners are therefore encouraged to secure insurance policies for improved limits since the Motor Third Party limits are usually low. f) Motor Comprehensive Insurance This motor Insurance policy covers the vehicle and its occupants against damages or losses arising from unforeseen calamities. It also covers third party injury and/or death as well as third party property damage. It is therefore prudent to purchase a Comprehensive Motor Insurance policy. g) How long does it take to settle a claim? Th",
+  "answer": "The documents required to support a claim are identification of the claimant and a police accident report.",
+  "model": "gpt-3.5-turbo-0125",
+  "path_to_pdf": "tmp_databases/Insurance.pdf",
+  "number_of_page": 6
+}

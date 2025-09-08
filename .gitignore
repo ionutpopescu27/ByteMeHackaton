@@ -44,7 +44,7 @@ backend/out/
 # Typst build artifacts (if you build from readme.typ)
 *.typ.log
 *.typ.aux
-*.pdf
+*.typ
 
 # Coverage / test artifacts
 .coverage
