@@ -1,14 +1,9 @@
 # reporting.py
 from __future__ import annotations
-from typing import List, Optional, Dict, Union
+from typing import Optional, Dict, Union
 from pydantic import BaseModel
 from pathlib import Path
 from datetime import datetime
-
-
-class Match(BaseModel):
-    rank: int
-    text: str
 
 
 class ConversationReport(BaseModel):
@@ -17,18 +12,10 @@ class ConversationReport(BaseModel):
     query: str
     collection_name: str
     k: int
-    matches: List[Match]
-    summary: str
     answer: str
     model: Optional[str] = None
     path_to_pdf: Union[Path, None]
     number_of_page: int
-
-
-def build_summary_plain(docs: List[str], max_chars: int = 1600) -> str:
-    "Concatenam matche-urile intr-un rezumat simplu"
-    flat = " ".join(" ".join(d.split()).strip() for d in docs if d and d.strip())
-    return flat[:max_chars].rstrip()
 
 
 def render_report_md(r: ConversationReport) -> str:
@@ -43,15 +30,7 @@ def render_report_md(r: ConversationReport) -> str:
         "",
         "## Answer",
         r.answer,
-        "",
-        "## Matches",
     ]
-    for m in r.matches:
-        lines.append(f"### Match {m.rank}")
-        lines.append(m.text)
-        lines.append("")
-    lines.append("## Summary")
-    lines.append(r.summary)
     return "\n".join(lines)
 
 

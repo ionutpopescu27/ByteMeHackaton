@@ -1,0 +1,11 @@
+{
+  "id": "38bee078-1f81-4f03-838e-b655942fe831",
+  "timestamp": "2025-09-08T14:31:17.426441Z",
+  "query": "Documents required to support a claim",
+  "collection_name": "docs_824bea41-28d0-4a58-a459-bd50e857e6d2",
+  "k": 3,
+  "answer": "The documents required to support a claim are identification of the claimant and a police accident report.",
+  "model": "gpt-3.5-turbo-0125",
+  "path_to_pdf": "tmp_databases/Insurance.pdf",
+  "number_of_page": 6
+}

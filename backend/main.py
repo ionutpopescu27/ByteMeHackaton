@@ -1,5 +1,5 @@
+# main.py
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 import uuid
 from fastapi import FastAPI, HTTPException
 from pathlib import Path
@@ -23,19 +23,23 @@ from .core_functions import (
     search_text_in_pdfs,
 )
 from .tmp_databases.query import add_pdfs, query_db, populate_db_tmp
-from .raport.reporting import (
-    ConversationReport,
-    Match,
-    build_summary_plain,
-    save_report_files,
+from .repo import (
+    start_new_conversation,
+    append_message,
+    close_conversation,
+    extract_phone,
+    get_conversations_with_messages_by_phone,
+    conversation_to_dict,
 )
-from .config import settings
+from .database import init_db_conversations, MessageRole
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await init_db_conversations()
     populate_db()
     populate_db_tmp()
+    app.state.conversation_id = await start_new_conversation(str(uuid.uuid4()))
     yield
 
 
@@ -55,6 +59,9 @@ async def root():
 async def response_from_llm(request: TextRequest) -> TextResponse:
     reply = await final_response(request.text)
     logger.debug(f"Generated reply text: {reply}")
+    # we add to the db
+    await append_message(app.state.conversation_id, MessageRole.user, request.text)
+    await append_message(app.state.conversation_id, MessageRole.bot, reply)
     return TextResponse(text=reply)
 
 
@@ -127,29 +134,39 @@ async def q_db(request: QueryRequest):
 async def rsp_db(request: QueryRequest) -> TextResponse:
     try:
         docs = query_db(request.text, request.collection_name, request.k)
-        answer = await final_response_gpt(request.text, docs)  # type: ignore
-        summary = build_summary_plain(docs)  # type: ignore
-        # TODO: ar trebui sa caut in ce fisier e docs si sa returnez fisierul si pagina + rand
-        # docs e o lista de string-uri , pot sa iau
+        answer_gpt = await final_response_gpt(request.text, docs)  # type: ignore
         path_pdf, number_page = await search_text_in_pdfs(
             Path("./tmp_databases/"), docs[0]
         )
         logger.debug(f"Path pdf {path_pdf} , number of page {number_page}")
-        report = ConversationReport(
-            id=str(uuid.uuid4()),
-            timestamp=datetime.now(timezone.utc),
-            query=request.text,
-            collection_name=request.collection_name,
-            k=request.k,
-            matches=[Match(rank=i + 1, text=t) for i, t in enumerate(docs)],
-            summary=summary,  # poate il sterg, e cam inutil
-            answer=answer,
-            model=getattr(settings, "OPENAI_MODEL_NAME_TEXT", None),
-            path_to_pdf=path_pdf,  # type:ignore
-            number_of_page=number_page,
+
+        await append_message(app.state.conversation_id, MessageRole.user, request.text)
+        await append_message(
+            app.state.conversation_id,
+            MessageRole.bot,
+            answer_gpt,
+            path_df=str(path_pdf),
+            number_page=number_page,
         )
-        paths = save_report_files(report)
-        logger.debug(paths)
-        return TextResponse(text=str(answer))
+        return TextResponse(text=str(answer_gpt))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/stop_call")
+async def stop_call(request: TextRequest) -> TextResponse:
+    phone = extract_phone(request.text)
+    await close_conversation(app.state.conversation_id, phone)
+    app.state.conversation_id = await start_new_conversation(conv_id=str(uuid.uuid4()))
+    logger.debug(f"Phone number {phone}")
+    return TextResponse(text=f"Call ended. Phone={phone}. New conversation started.")
+
+
+# POST http://127.0.0.1:8000/conv
+# {
+#   "text": "+40774596204"
+# }
+@app.post("/conv")
+async def conversations_by_phone(request: TextRequest):
+    conversations = await get_conversations_with_messages_by_phone(request.text)
+    return [conversation_to_dict(c) for c in conversations]
