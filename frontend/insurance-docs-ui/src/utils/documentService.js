@@ -24,3 +24,23 @@ export async function fetchRecentDocuments(limit = 3) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+export async function addInChroma() {
+  // first we need to get the paths to all files uploaded
+  const response_documents = await fetch(`${API_BASE}/documents`);
+  const documents = await response_documents.json();
+  let document_paths = []
+  documents.forEach((element) => {
+    document_paths.push(element.path);
+  });
+
+  // now to call the /populate_chroma
+  const resp = await fetch(`${API_BASE}/populate_chroma`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paths: document_paths }),
+  });
+
+  const data = await resp.json();
+  return data.text;
+}

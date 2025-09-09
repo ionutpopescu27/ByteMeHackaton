@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { fetchRecentDocuments } from "../utils/documentService";
+import { addInChroma } from "../utils/documentService";
 import DocumentItem from "../components/DocumentItem";
 
 export default function Home() {
   const [recent, setRecent] = useState([]);
   const [error, setError] = useState("");
+  const [makingCollection, setMakingCollection] = useState(false);
+  const [collectionId, setCollectionId] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -17,6 +20,28 @@ export default function Home() {
       }
     })();
   }, []);
+
+
+  const handleMakeCollection = async (e) => {
+    e.preventDefault();
+    try {
+      setMakingCollection(true);
+      setError("");
+      const id = await addInChroma();     // { text: "docs_..." } -> returnează string
+      setCollectionId(id);
+    } catch (err) {
+      setError(err?.message || "Failed to build collection");
+    } finally {
+      setMakingCollection(false);
+    }
+  };
+
+  const copyId = async () => {
+    try {
+      await navigator.clipboard.writeText(collectionId);
+    } catch {
+    }
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -48,6 +73,35 @@ export default function Home() {
               }}
             />
           ))}
+        </div>
+      )}
+
+
+      <button
+        type="button"
+        onClick={handleMakeCollection}
+        style={{ width: "min(300px, 92vw)" }}
+        disabled={makingCollection}
+      >
+        {makingCollection ? "Building collection..." : "Build Collection from Documents"}
+      </button>
+
+      {collectionId && (
+        <div style={{ width: "min(900px, 92vw)", display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            value={collectionId}
+            readOnly
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              fontFamily: "monospace",
+            }}
+          />
+          <button type="button" onClick={copyId} style={{ padding: "10px 12px", borderRadius: 6 }}>
+            Copy
+          </button>
         </div>
       )}
     </div>
