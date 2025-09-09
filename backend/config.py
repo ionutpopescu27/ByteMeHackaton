@@ -1,30 +1,24 @@
 import os
+from pathlib import Path  # ← ADDED
 from dotenv import load_dotenv
 from loguru import logger
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# trebuie sa dai log la toate detaliile de configurare a unui proiect
-load_dotenv()
-
-parent = os.getcwd()
-
-
-env_file = ".env"
+# Determine which env file to use (prod vs dev), but resolve it RELATIVE TO THIS FILE
+BASE_DIR = Path(__file__).resolve().parent                # backend/
 mode = os.getenv("ENV")
+env_filename = ".env" if mode != "production" else ".env.production"
+ENV_PATH = BASE_DIR / env_filename                        # ← KEY CHANGE (absolute path)
 
-if mode == "production":
-    logger.info("Running in production..." + env_file)
-    env_file = ".env.production"
+logger.debug(f"Loading env file: {ENV_PATH}")
 
-logger.debug(f"Loading env file: {env_file}")
-
-# loading env for prisma schema that don't have access to this settings class
-load_dotenv(env_file)
-
+# Load env for the whole process (so other libs can see it, too)
+load_dotenv(dotenv_path=ENV_PATH)                         # ← KEY CHANGE
 
 class __Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+    # Make Pydantic also read the SAME file explicitly
+    model_config = SettingsConfigDict(env_file=str(ENV_PATH), extra="ignore")  # ← KEY CHANGE
 
     OPENAI_MODEL_NAME_TEXT: str = Field("Model name for text")
     OPENAI_MODEL_NAME_TTS: str = Field("Model name for tts")
@@ -33,9 +27,9 @@ class __Settings(BaseSettings):
     OPENAI_MODEL_NAME_IMAGE: str = Field("Model for image generation")
     OPENAI_API_KEY: str = Field("Api key")
 
-
-# all ways use this settings rather than using __Settings()
+# Always use this settings rather than instantiating __Settings directly
 settings = __Settings()  # type: ignore
 
-if not mode == "production":
+if mode != "production":
+    # ⚠️ This will print your API key in logs. Consider masking it or removing in production.
     logger.debug(settings.model_dump_json(indent=3))

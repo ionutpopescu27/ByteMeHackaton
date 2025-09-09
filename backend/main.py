@@ -1,8 +1,10 @@
 # main.py
 from contextlib import asynccontextmanager
 import uuid
-from fastapi import FastAPI, HTTPException
 from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # <<< ADDED
 
 from loguru import logger
 from .models import (
@@ -33,17 +35,46 @@ from .repo import (
 )
 from .database import init_db_conversations, MessageRole
 
+# >>> ADDED: import our new router
+from .documents import router as documents_router  # <<< ADDED
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db_conversations()
-    populate_db()
-    populate_db_tmp()
+
+    # Seed Q/A collection (skip on error so startup continues)
+    try:
+        populate_db(path=str(Path(__file__).with_name("db.json")))
+    except Exception as e:
+        logger.warning(f"populate_db skipped due to error: {e}")  # <<< ADDED
+
+    # Seed tmp pdfs into chroma (skip on error so startup continues)
+    try:
+        populate_db_tmp()  # may call embeddings; guard it
+    except Exception as e:
+        logger.warning(f"populate_db_tmp skipped due to error: {e}")  # <<< ADDED
+
     app.state.conversation_id = await start_new_conversation(str(uuid.uuid4()))
     yield
 
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS so the React dev server can call the API  # <<< ADDED
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# >>> ADDED: register the router (prefix left empty on purpose)
+app.include_router(documents_router)  # <<< ADDED
 
 
 @app.get("/")
@@ -118,7 +149,6 @@ async def populate_chroma(request: PdfsRequest) -> TextResponse:
 async def q_db(request: QueryRequest):
     try:
         docs = query_db(request.text, request.collection_name, request.k)
-
         return {"matches": docs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
