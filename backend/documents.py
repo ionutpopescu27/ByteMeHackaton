@@ -1,6 +1,7 @@
 # documents.py
 import os
 import uuid
+from pathlib import Path
 import sqlite3
 from datetime import datetime
 from typing import Optional
@@ -14,7 +15,12 @@ from .tmp_databases.query import add_pdfs  # same as in /populate_chroma
 router = APIRouter()
 
 BASE_DIR = os.getcwd()
-UPLOAD_DIR = os.path.join(BASE_DIR, "backend\\tmp_databases")
+# UPLOAD_DIR = os.path.join(BASE_DIR, "backend\\tmp_databases")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+UPLOAD_DIR = (PROJECT_ROOT / "backend" / "tmp_databases").resolve()
+UPLOAD_DIR_STR = UPLOAD_DIR.as_posix()
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 DOC_DB_PATH = os.path.join(BASE_DIR, "documents.db")
@@ -32,6 +38,8 @@ def _init_doc_db():
                 deleted INTEGER DEFAULT 0
             )
         """)
+
+
 _init_doc_db()
 
 
@@ -74,7 +82,9 @@ async def upload_and_index(file: UploadFile = File(...)):
     save_path = os.path.join(UPLOAD_DIR, file.filename)
     if os.path.exists(save_path):
         name, ext = os.path.splitext(file.filename)
-        save_path = os.path.join(UPLOAD_DIR, f"{name}_{int(datetime.now().timestamp())}{ext}")
+        save_path = os.path.join(
+            UPLOAD_DIR, f"{name}_{int(datetime.now().timestamp())}{ext}"
+        )
 
     content = await file.read()
     with open(save_path, "wb") as f:
@@ -87,7 +97,9 @@ async def upload_and_index(file: UploadFile = File(...)):
         add_pdfs([save_path], collection_name)
     except Exception as e:
         logger.exception("Failed to add PDFs to Chroma")
-        raise HTTPException(status_code=500, detail=f"Chroma ingestion failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Chroma ingestion failed: {str(e)}"
+        )
 
     # Store metadata we can query later
     doc_id = _insert_document(os.path.basename(save_path), save_path, collection_name)

@@ -1,5 +1,6 @@
 # main.py
 from contextlib import asynccontextmanager
+import re
 import uuid
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from .core_functions import (
     generate_text_from_audio,
     final_response_gpt,
     search_text_in_pdfs,
+    check_if_user_wants_form,
+    generate_form_json,
 )
 from .tmp_databases.query import add_pdfs, query_db, populate_db_tmp
 from .repo import (
@@ -37,6 +40,9 @@ from .database import init_db_conversations, MessageRole
 
 # >>> ADDED: import our new router
 from .documents import router as documents_router  # <<< ADDED
+
+
+BASE_URL = ""
 
 
 @asynccontextmanager
@@ -161,8 +167,21 @@ async def q_db(request: QueryRequest):
 #   "k": 3
 # }
 @app.post("/rsp_db")
-async def rsp_db(request: QueryRequest) -> TextResponse:
+async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
+        answer = await check_if_user_wants_form(request.text)
+        if re.search("YES", answer) is not None:
+            # await append_message(
+            #     app.state.conversation_id, MessageRole.user, request.text
+            # )
+            logger.debug("User wants a form, sending on other server...")
+            js = await generate_form_json(request.text)
+            logger.debug(js)
+
+            return "Sent a sms", js
+            return TextResponse(text="Sent a sms")
+
+        logger.debug(f"Check if user wants a form : {answer}")
         docs = query_db(request.text, request.collection_name, request.k)
         answer_gpt = await final_response_gpt(request.text, docs)  # type: ignore
         path_pdf, number_page = await search_text_in_pdfs(
@@ -170,14 +189,14 @@ async def rsp_db(request: QueryRequest) -> TextResponse:
         )
         logger.debug(f"Path pdf {path_pdf} , number of page {number_page}")
 
-        await append_message(app.state.conversation_id, MessageRole.user, request.text)
-        await append_message(
-            app.state.conversation_id,
-            MessageRole.bot,
-            answer_gpt,
-            path_df=str(path_pdf),
-            number_page=number_page,
-        )
+        # await append_message(app.state.conversation_id, MessageRole.user, request.text)
+        # await append_message(
+        #     app.state.conversation_id,
+        #     MessageRole.bot,
+        #     answer_gpt,
+        #     path_df=str(path_pdf),
+        #     number_page=number_page,
+        # )
         return TextResponse(text=str(answer_gpt))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

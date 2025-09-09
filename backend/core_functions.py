@@ -291,3 +291,87 @@ async def search_text_in_pdfs(
                 return file, page_number
 
     return None, -1
+
+
+async def check_if_user_wants_form(text: str) -> str:
+    """
+    We take the text and use open ai's api to check if the user wants to get
+    if the user wants to like a form
+    e.g. I want to make an insurance on your firm for my car
+    """
+    system_template = (
+        "You are an intent classifier for ByteMe Insurance.\n"
+        "Task: Decide if the customer wants to complete a form (to start/buy/apply for an insurance policy or to submit a claim).\n"
+        "Output a single short sentence (max 2). Keep numbers/years exactly as written.\n"
+        "If the input is Romanian, answer in Romanian; otherwise, answer in the input language.\n"
+        "Rules:\n"
+        "- Answer strictly as: 'YES — <very brief reason>' or 'NO — <very brief reason>'.\n"
+        "- Consider YES when the user expresses desire to start, buy, apply for, make insurance, request a quote, or submit a claim.\n"
+        "- Consider NO for generic info questions, small talk, or ambiguous statements.\n"
+        "No preamble, no extra formatting."
+    )
+
+    user_template = (
+        "Customer message:\n{text}\n\n"
+        "Does the customer want to complete a form? Reply with 'YES — <reason>' or 'NO — <reason>'."
+    )
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_template),
+            ("human", user_template),
+        ]
+    )
+
+    model_text = ChatOpenAI(
+        model=settings.OPENAI_MODEL_NAME_TEXT,
+        temperature=0.2,
+        max_tokens=100,
+    )  # type: ignore
+
+    chain = prompt_tmpl | model_text | StrOutputParser()
+    extra: str = await chain.ainvoke({"text": text})
+    extra = (extra or "").strip()
+
+    return extra
+
+
+async def generate_form_json(text: str) -> str:
+    """
+    We take the user's text and we generate a form on our website
+    e.g. I want to make an insurance on your firm for my car ...
+    """
+    system_template = (
+        "You are a form-field generator for ByteMe Insurance. "
+        "Return STRICT JSON on a single line with EXACTLY one key: fields. "
+        "'fields' is an array (6–12 items) of question objects. "
+        "Each object MUST have: id (snake_case), question (short, single, in the input language), "
+        "type (text|number), required (boolean). "
+        "Do NOT include any other keys. "
+        "Answers must be plain strings or numbers only; DO NOT use select/date/email/phone/textarea/file/checkbox/radio. "
+        "Preserve numbers/years exactly as written. "
+        "No prose, no markdown."
+    )
+
+    user_template = (
+        "Customer message:\n{text}\n"
+        "Return ONLY one-line JSON like:\n"
+        '{{"fields":[{{"id":"driver_age","question":"Age of driver","type":"number","required":true}}]}}'
+    )
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_template),
+            ("human", user_template),
+        ]
+    )
+
+    model_text = ChatOpenAI(
+        model=settings.OPENAI_MODEL_NAME_TEXT,
+        temperature=0.2,
+        max_tokens=200,
+    )  # type: ignore
+
+    chain = prompt_tmpl | model_text | StrOutputParser()
+    extra: str = await chain.ainvoke({"text": text})
+    extra = (extra or "").strip()
+
+    return extra
