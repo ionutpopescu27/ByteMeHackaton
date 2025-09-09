@@ -25,6 +25,7 @@ from .core_functions import (
     final_response_gpt,
     search_text_in_pdfs,
     check_if_user_wants_form,
+    check_if_user_wants_agent,
     generate_form_json,
 )
 from .tmp_databases.query import add_pdfs, query_db, populate_db_tmp
@@ -169,8 +170,8 @@ async def q_db(request: QueryRequest):
 @app.post("/rsp_db")
 async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
-        answer = await check_if_user_wants_form(request.text)
-        if re.search("YES", answer) is not None:
+        answer_form = await check_if_user_wants_form(request.text)
+        if re.search("YES", answer_form) is not None:
             await append_message(
                 app.state.conversation_id, MessageRole.user, request.text
             )
@@ -185,7 +186,21 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
 
             return TextResponse(text="Sent a sms")
 
-        logger.debug(f"Check if user wants a form : {answer}")
+        answer_human = await check_if_user_wants_agent(request.text)
+        if re.search("YES", answer_human) is not None:
+            await append_message(
+                app.state.conversation_id, MessageRole.user, request.text
+            )
+            await append_message(
+                app.state.conversation_id,
+                MessageRole.bot,
+                "Called an agent",
+            )
+            logger.debug("User wants an agent, sending on other server...")
+
+            return TextResponse(text="Sent a sms")
+
+        logger.debug(f"Check if user wants a form : {answer_form}")
         docs = query_db(request.text, request.collection_name, request.k)
         answer_gpt = await final_response_gpt(request.text, docs)  # type: ignore
         path_pdf, number_page = await search_text_in_pdfs(
