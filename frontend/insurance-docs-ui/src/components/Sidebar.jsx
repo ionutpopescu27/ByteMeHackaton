@@ -6,7 +6,8 @@ import moreIcon from "../assets/more.png";
 import notificationsIcon from "../assets/notifications.png";
 import trashIcon from "../assets/trash.png";
 import documentsIcon from "../assets/documents.png";
-import dashboardIcon from "../assets/dashboard.png"; // ✅ NEW ICON
+import dashboardIcon from "../assets/dashboard.png";
+import chatIcon from "../assets/chat.png"; // ✅ Chat icon
 
 const Sidebar = () => {
   return (
@@ -58,6 +59,14 @@ const Sidebar = () => {
           <div className="sidebar-option">
             <img src={documentsIcon} alt="My Documents" style={{ width: "20px", height: "20px" }} />
             <span>My Documents</span>
+          </div>
+        </Link>
+
+        {/* 💬 Transcripts */}
+        <Link to="/transcripts" style={{ textDecoration: "none" }}>
+          <div className="sidebar-option">
+            <img src={chatIcon} alt="Transcripts" style={{ width: "20px", height: "20px" }} />
+            <span>Transcripts</span>
           </div>
         </Link>
 

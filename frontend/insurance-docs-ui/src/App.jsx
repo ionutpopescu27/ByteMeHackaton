@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import UploadPage from "./pages/UploadPage";
 import MyDocuments from "./pages/MyDocuments";
 import RecentlyDeleted from "./pages/RecentlyDeleted";
+import Transcripts from "./pages/Transcripts";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/documents" element={<MyDocuments />} />
               <Route path="/deleted" element={<RecentlyDeleted />} />
+              <Route path="/transcripts" element={<Transcripts />} />
             </Routes>
           </main>
         </div>
