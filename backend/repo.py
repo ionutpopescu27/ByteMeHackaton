@@ -1,11 +1,20 @@
 # repo.py
 import re
+import unicodedata
 from typing import Optional, Union, Dict, Any
 import uuid
 from datetime import datetime, timezone
+from loguru import logger
+from numpy import log
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from .database import SessionLocal, Conversation, Message, MessageRole
+from .database import (
+    SessionLocal,
+    Conversation,
+    Message,
+    MessageRole,
+    ConversationLabel,
+)
 
 PHONE_RE = re.compile(r"\+?\d[\d\s\-()]{6,}")
 
@@ -51,14 +60,67 @@ async def append_message(
         await s.commit()
 
 
+SMS_KEYS = ("sent a sms", "sms", "link", "form link", "formular")
+HUMAN_KEYS = ("human", "operator", "agent", "escalat", "escalation", "transfer")
+
+
+def _normalize(s: str) -> str:
+    return "".join(
+        ch for ch in unicodedata.normalize("NFD", s) if unicodedata.category(ch) != "Mn"
+    )
+
+
+SMS_RE = re.compile(
+    r"\b(sent\s+(?:an|a)?\s*sms|sms|form(?:ular)?\s*link|formular|link)\b",
+    flags=re.IGNORECASE,
+)
+HUMAN_RE = re.compile(
+    r"\b(human|operator|agent|escalat(?:ion|e|ed|are)?|transfer)\b",
+    flags=re.IGNORECASE,
+)
+
+
 async def close_conversation(conversation_id: str, phone_number: Union[str, None]):
     async with SessionLocal() as s:
         conv = await s.get(Conversation, conversation_id)
-        if conv:
-            if phone_number and not conv.phone_number:
-                conv.phone_number = phone_number
-            conv.ended_at = datetime.now(timezone.utc)
-            await s.commit()
+        if not conv:
+            return
+
+        res = await s.execute(
+            select(Message)
+            .where(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(1)
+        )
+        last_message = res.scalars().first()
+
+        label = ConversationLabel.resolved  # default
+        if last_message and last_message.text:
+            logger.debug(f"Last message : {last_message.text}")
+            t = _normalize(last_message.text)
+            if re.search("sms", t) or SMS_RE.search(t):
+                label = ConversationLabel.escalated_website
+            elif re.search("agent", t) or HUMAN_RE.search(t):
+                label = ConversationLabel.escalated_human
+
+        if phone_number and not conv.phone_number:
+            conv.phone_number = phone_number
+        conv.ended_at = datetime.now(timezone.utc)
+        conv.label = label
+
+        await s.commit()
+
+
+# async def close_conversation(conversation_id: str, phone_number: Union[str, None]):
+#     async with SessionLocal() as s:
+#         conv = await s.get(Conversation, conversation_id)
+#
+#         # vreau ultimul mesaj contine sms , daca a fost un raspuns simplu sau daca a fost human escalation
+#         if conv:
+#             if phone_number and not conv.phone_number:
+#                 conv.phone_number = phone_number
+#             conv.ended_at = datetime.now(timezone.utc)
+#             await s.commit()
 
 
 async def get_conversations_with_messages_by_phone(
@@ -92,6 +154,9 @@ def conversation_to_dict(conv: Conversation) -> Dict[str, Any]:
         "phone_number": conv.phone_number,
         "started_at": conv.started_at.isoformat() if conv.started_at else None,
         "ended_at": conv.ended_at.isoformat() if conv.ended_at else None,
+        "label": (
+            conv.label.value if getattr(conv.label, "value", None) else conv.label
+        ),
         "messages": [
             {
                 "id": msg.id,
@@ -104,3 +169,18 @@ def conversation_to_dict(conv: Conversation) -> Dict[str, Any]:
             for msg in conv.messages
         ],
     }
+
+
+# async def set_conversation_label(
+#     conversation_id: str, label: ConversationLabel
+# ) -> None:
+#     async with SessionLocal() as s:
+#         conv = await s.get(Conversation, conversation_id)
+#         messages = conv.messages  # tpye:ignore
+#         # vreau doar ultimul mesaj dat de bot , daca e ceva cu sms
+#         last_message = messages[-1]
+#
+#         if not conv:
+#             return
+#         conv.label = label
+#         await s.commit()

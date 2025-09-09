@@ -171,14 +171,18 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
         answer = await check_if_user_wants_form(request.text)
         if re.search("YES", answer) is not None:
-            # await append_message(
-            #     app.state.conversation_id, MessageRole.user, request.text
-            # )
+            await append_message(
+                app.state.conversation_id, MessageRole.user, request.text
+            )
+            await append_message(
+                app.state.conversation_id,
+                MessageRole.bot,
+                "sms sent",
+            )
             logger.debug("User wants a form, sending on other server...")
             js = await generate_form_json(request.text)
             logger.debug(js)
 
-            return "Sent a sms", js
             return TextResponse(text="Sent a sms")
 
         logger.debug(f"Check if user wants a form : {answer}")
@@ -189,14 +193,14 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
         )
         logger.debug(f"Path pdf {path_pdf} , number of page {number_page}")
 
-        # await append_message(app.state.conversation_id, MessageRole.user, request.text)
-        # await append_message(
-        #     app.state.conversation_id,
-        #     MessageRole.bot,
-        #     answer_gpt,
-        #     path_df=str(path_pdf),
-        #     number_page=number_page,
-        # )
+        await append_message(app.state.conversation_id, MessageRole.user, request.text)
+        await append_message(
+            app.state.conversation_id,
+            MessageRole.bot,
+            answer_gpt,
+            path_df=str(path_pdf),
+            number_page=number_page,
+        )
         return TextResponse(text=str(answer_gpt))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

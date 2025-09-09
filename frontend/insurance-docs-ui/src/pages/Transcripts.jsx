@@ -8,6 +8,17 @@ const ORANGE_DARK = "#E44D39";
 const TEXT = "#FFFFFF";
 const BORDER = "rgba(255,255,255,0.15)";
 
+const labelInfo = (label, endedAt) => {
+  const map = {
+    resolved: { text: "Resolved", bg: "#dcfce7", fg: "#166534" },
+    escalated_website: { text: "Escalated · Website", bg: "#dbeafe", fg: "#1e40af" },
+    escalated_human: { text: "Escalated · Human", bg: "#fee2e2", fg: "#991b1b" },
+    open: { text: "Open", bg: "#fef3c7", fg: "#92400e" },
+  };
+  const key = label || (!endedAt ? "open" : "resolved");
+  return map[key] || map.open;
+};
+
 function SectionCard({ title, children, right }) {
   return (
     <div
@@ -41,6 +52,7 @@ function ConversationHeader({ conv, expanded, toggle }) {
   const started = conv?.started_at ? new Date(conv.started_at).toLocaleString() : "";
   const ended = conv?.ended_at ? new Date(conv.ended_at).toLocaleString() : "";
   const count = (conv?.messages || []).length;
+  const info = labelInfo(conv.label, conv.ended_at);
 
   return (
     <button
@@ -65,16 +77,32 @@ function ConversationHeader({ conv, expanded, toggle }) {
         if (!expanded) e.currentTarget.style.backgroundColor = "transparent";
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ fontWeight: 700 }}>
-          {started} {!!ended && <> → {ended}</>} — {count} message{count === 1 ? "" : "s"}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontWeight: 700 }}>
+            {started} {!!ended && <> → {ended}</>} — {count} message{count === 1 ? "" : "s"}
+          </div>
+          <span
+            style={{
+              alignSelf: "center",
+              display: "inline-block",
+              padding: "2px 10px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              background: info.bg,
+              color: info.fg,
+            }}
+            title={conv.label || (!conv.ended_at ? "open" : "resolved")}
+          >
+            {info.text}
+          </span>
         </div>
         <div style={{ opacity: 0.9 }}>{expanded ? "Hide" : "View"}</div>
       </div>
     </button>
   );
 }
-
 function MessageBubble({ msg }) {
   const isUser = msg.role === "user";
 
@@ -216,6 +244,26 @@ export default function Transcripts() {
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {conversations.map((c) => {
+              (() => {
+                const info = labelInfo(c.label, c.ended_at);
+                return (
+                  <span
+                    style={{
+                      alignSelf: "start",
+                      display: "inline-block",
+                      padding: "2px 10px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: info.bg,
+                      color: info.fg,
+                    }}
+                    title={c.label || (!c.ended_at ? "open" : "resolved")}
+                  >
+                    {info.text}
+                  </span>
+                );
+              })()
               const isOpen = !!expanded[c.id];
               return (
                 <div key={c.id} style={{ display: "grid", gap: 10 }}>
@@ -226,6 +274,7 @@ export default function Transcripts() {
                       setExpanded((s) => ({ ...s, [c.id]: !s[c.id] }))
                     }
                   />
+
                   {isOpen && (
                     <div style={{ paddingLeft: 6 }}>
                       {(c.messages || []).map((m) => (
