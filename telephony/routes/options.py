@@ -9,7 +9,7 @@ from twilio.rest import Client
 
 
 router = APIRouter()
-BASE_URL = 'https://922df4a5c81b.ngrok-free.app'
+BASE_URL = 'https://802126f966c4.ngrok-free.app'
 
 
 """
@@ -115,7 +115,7 @@ async def handle_intent_specific(SpeechResult:str = Form(None)) -> PlainTextResp
             body_preview = (res.text[:500] if "res" in locals() and hasattr(res, "text") else str(e))
             print("Backend error or non-JSON response:", body_preview)
         
-    reply = data.get('text', "Sorry, I didn't get a reply")
+    reply = data.get('text', "Sorry, I didn't get a reply dick.")
 
     if re.search("sms", reply):
         resp.redirect('/message')
@@ -139,7 +139,7 @@ async def handle_intent_specific(SpeechResult:str = Form(None)) -> PlainTextResp
 async def human_escalation_message() -> PlainTextResponse:
     resp = VoiceResponse()
     resp.say('An agent will be with you shortly. Keep the call open to not loose your priority!')
-    resp.redirect('/human-escalation-music')
+    resp.redirect('/human-escalation-jokes')
     return PlainTextResponse(str(resp), media_type="text/xml")
 
 
@@ -151,3 +151,25 @@ async def human_escalation_music() -> PlainTextResponse:
     return PlainTextResponse(str(resp), media_type="text/xml")
 
 
+@router.post("/human-escalation-jokes")
+async def jokes() -> PlainTextResponse:
+    resp = VoiceResponse()
+    resp.say('Welcome to the local stand up comedy clubs best jokes!')
+    data = {}
+    jokes = []
+
+    for i in range(3):
+        async with httpx.AsyncClient() as client:
+            res = await client.get(
+                f"https://icanhazdadjoke.com/",
+                headers={"Accept": "application/json"}
+            )
+            data = res.json()
+    
+            joke = data.get("joke", "Sorry, no joke for you")
+            jokes.append(joke)
+
+    for i in range(3):        
+        resp.say(jokes[i])
+    resp.redirect('/human-escalation-message')
+    return PlainTextResponse(str(resp), media_type="text/xml")

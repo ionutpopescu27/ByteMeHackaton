@@ -6,6 +6,9 @@ import httpx
 from dotenv import load_dotenv
 from twilio.twiml.voice_response import VoiceResponse,  Gather
 from twilio.rest import Client
+from .options import handle_intent_specific
+from . import routes
+from . import options
 
 load_dotenv()
 router = APIRouter()
@@ -14,7 +17,7 @@ account_sid = os.environ["TWILIO_ACCOUNT_SID"]
 auth_token = os.environ["TWILIO_AUTH_TOKEN"]
 twilio_phone = os.environ["TWILIO_PHONE_NUMBER"]
 
-BASE_URL = 'https://922df4a5c81b.ngrok-free.app'
+BASE_URL = 'https://802126f966c4.ngrok-free.app'
 
 
 """
@@ -35,6 +38,8 @@ async def message():
         to="+40774596204",
         from_=str(twilio_phone)
     )
+    options.message_case = 0    
+    resp.redirect(url="/handle-intent-specific", method="POST")
     return PlainTextResponse(str(resp), status_code=200, media_type="text/xml")
 
 
@@ -68,3 +73,6 @@ async def call_status(request: Request) -> PlainTextResponse:
     message_case = 0
 
     return PlainTextResponse("", status_code=204)
+
+
+  

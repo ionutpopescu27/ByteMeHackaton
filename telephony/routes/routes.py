@@ -8,8 +8,7 @@ from twilio.twiml.voice_response import VoiceResponse,  Gather
 from twilio.rest import Client
 from .options import router as option_router
 from .utils import router as utils_router
-
-
+from . import options
 
 
 """
@@ -33,6 +32,7 @@ firstQuestion : bool = True
 @router.post("/voice", response_class=PlainTextResponse)
 async def voice(Digits:int = Form(None)) -> PlainTextResponse:
     global firstQuestion
+    options.message_case = 0
     resp = VoiceResponse()
     
     if Digits:
@@ -52,7 +52,7 @@ async def voice(Digits:int = Form(None)) -> PlainTextResponse:
         gather.say('Can I help you with something else? Press one for general purpose and two for more specific.')
     
     resp.append(gather)
-    resp.say("Sorry, I didn't catch that.")
+    resp.say("Sorry, I didn't catch that vagina.")
 
     return PlainTextResponse(str(resp), media_type="text/xml")
 
