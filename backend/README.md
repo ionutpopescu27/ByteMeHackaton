@@ -39,10 +39,7 @@ e.g Typically, you’ll need your policy number, a government-issued ID, proof o
 
 2.1. Asking specific questions about ByteMe insurance firm
 e.g. What is Motor Third Party Insurance claim process?
-                  |
-                  |
-                  V
-MOTOR THIRD PARTY (MTP) INSURANCE is a mandatory motor insurance cover required for all vehicles, vans, or motorcycles for private or commercial use, providing liability coverage against bodily injury or death of a third party.
+Response: MOTOR THIRD PARTY (MTP) INSURANCE is a mandatory motor insurance cover required for all vehicles, vans, or motorcycles for private or commercial use, providing liability coverage against bodily injury or death of a third party.
 
 2.2. Sms + specific form on needs 
 e.g.I want to make a claim and i want the documents required to support a claim.
@@ -50,6 +47,7 @@ Response: sms sent for your personalized form on your query , you will need to p
 
 2.3. Human escalation 
 e.g. I want to talk with an agent.
+Response: Called an agent
 
 ```
 
