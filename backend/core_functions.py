@@ -291,3 +291,133 @@ async def search_text_in_pdfs(
                 return file, page_number
 
     return None, -1
+
+
+async def check_if_user_wants_agent(text: str) -> str:
+    """
+    We take the text and use open ai's api to check if the user wants to get
+    if the user wants to talk to an agent
+    e.g. I want to talk to an agent
+    """
+    system_template = (
+        "You are an intent classifier for ByteMe Insurance.\n"
+        "Task: Determine whether the customer is asking to talk to a human agent/representative (transfer to agent or request a callback).\n"
+        "Output a single short sentence (max 2). Keep numbers/years exactly as written.\n"
+        "If the input is Romanian, answer in Romanian; otherwise, answer in the input language.\n"
+        "Rules:\n"
+        "- Answer strictly as: 'YES — <very brief reason>' or 'NO — <very brief reason>'.\n"
+        "- Consider YES when the user explicitly asks to talk to a person (agent/operator/representative/consultant/human), "
+        "asks to be called back (e.g., 'call me', 'please call', 'sună-mă'), provides a phone number expecting contact, "
+        "or requests transfer/escalation to a human.\n"
+        "- Consider NO for generic info questions, requests to fill a form/submit a claim without asking for a person, "
+        "hypotheticals (e.g., 'do I need to talk to an agent?'), or when the user declines a transfer (e.g., 'don't transfer me').\n"
+        "- If both 'form' and 'agent' are mentioned, prefer YES (the user wants a human).\n"
+        "No preamble, no extra formatting."
+    )
+
+    user_template = (
+        "Customer message:\n{text}\n\n"
+        "Does the customer want to talk to a human agent now (transfer/callback)? Reply ONLY with 'YES — <reason>' or 'NO — <reason>'."
+    )
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_template),
+            ("human", user_template),
+        ]
+    )
+
+    model_text = ChatOpenAI(
+        model=settings.OPENAI_MODEL_NAME_TEXT,
+        temperature=0.2,
+        max_tokens=100,
+    )  # type: ignore
+
+    chain = prompt_tmpl | model_text | StrOutputParser()
+    extra: str = await chain.ainvoke({"text": text})
+    extra = (extra or "").strip()
+
+    return extra
+
+
+async def check_if_user_wants_form(text: str) -> str:
+    """
+    We take the text and use open ai's api to check if the user wants to get
+    if the user wants to like a form
+    e.g. I want to make an insurance on your firm for my car
+    """
+    system_template = (
+        "You are an intent classifier for ByteMe Insurance.\n"
+        "Task: Decide if the customer wants to complete a form (to start/buy/apply for an insurance policy or to submit a claim).\n"
+        "Output a single short sentence (max 2). Keep numbers/years exactly as written.\n"
+        "If the input is Romanian, answer in Romanian; otherwise, answer in the input language.\n"
+        "Rules:\n"
+        "- Answer strictly as: 'YES — <very brief reason>' or 'NO — <very brief reason>'.\n"
+        "- Consider YES when the user expresses desire to start, buy, apply for, make insurance, request a quote, or submit a claim.\n"
+        "- Consider NO for generic info questions, small talk, or ambiguous statements.\n"
+        "No preamble, no extra formatting."
+    )
+
+    user_template = (
+        "Customer message:\n{text}\n\n"
+        "Does the customer want to complete a form? Reply with 'YES — <reason>' or 'NO — <reason>'."
+    )
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_template),
+            ("human", user_template),
+        ]
+    )
+
+    model_text = ChatOpenAI(
+        model=settings.OPENAI_MODEL_NAME_TEXT,
+        temperature=0.2,
+        max_tokens=100,
+    )  # type: ignore
+
+    chain = prompt_tmpl | model_text | StrOutputParser()
+    extra: str = await chain.ainvoke({"text": text})
+    extra = (extra or "").strip()
+
+    return extra
+
+
+async def generate_form(text: str) -> list[str]:
+    """
+    We take the user's text and we generate a form on our website
+    e.g. I want to make an insurance on your firm for my car ...
+    """
+
+    system_template = (
+        "You are a question generator for ByteMe Insurance. "
+        "Given the customer's message, output ONLY concise questions in English, one per line. "
+        "Generate 6–10 short, specific, single-sentence questions that would help complete an insurance form or claim, "
+        "based strictly on the user's message and obvious domain needs. "
+        "Keep numbers/years exactly as written. "
+        "No bullets, no numbering, no extra text—just the questions, each on its own line."
+    )
+
+    user_template = (
+        "Customer message:\n{text}\n"
+        "Return ONLY the questions, one per line, in English."
+    )
+
+    prompt_tmpl = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_template),
+            ("human", user_template),
+        ]
+    )
+
+    model_text = ChatOpenAI(
+        model=settings.OPENAI_MODEL_NAME_TEXT,
+        temperature=0.2,
+        max_tokens=200,
+    )  # type: ignore
+
+    chain = prompt_tmpl | model_text | StrOutputParser()
+    raw: str = await chain.ainvoke({"text": text})
+    raw = (raw or "").strip()
+
+    # transformă în listă de întrebări
+    questions = [q.strip(" -•\t") for q in raw.splitlines() if q.strip()]
+    return questions

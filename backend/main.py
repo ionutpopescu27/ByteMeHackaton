@@ -1,8 +1,13 @@
 # main.py
 from contextlib import asynccontextmanager
+import re
+from typing import Union
+from fastapi import Query
 import uuid
-from fastapi import FastAPI, HTTPException
 from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # <<< ADDED
 
 from loguru import logger
 from .models import (
@@ -21,6 +26,9 @@ from .core_functions import (
     generate_text_from_audio,
     final_response_gpt,
     search_text_in_pdfs,
+    check_if_user_wants_form,
+    check_if_user_wants_agent,
+    generate_form,
 )
 from .tmp_databases.query import add_pdfs, query_db, populate_db_tmp
 from .repo import (
@@ -30,20 +38,55 @@ from .repo import (
     extract_phone,
     get_conversations_with_messages_by_phone,
     conversation_to_dict,
+    create_form,
+    list_forms,
+    form_to_dict,
 )
 from .database import init_db_conversations, MessageRole
+
+# >>> ADDED: import our new router
+from .documents import router as documents_router  # <<< ADDED
+
+
+BASE_URL = ""
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db_conversations()
-    populate_db()
-    populate_db_tmp()
+
+    # Seed Q/A collection (skip on error so startup continues)
+    try:
+        populate_db(path=str(Path(__file__).with_name("db.json")))
+    except Exception as e:
+        logger.warning(f"populate_db skipped due to error: {e}")  # <<< ADDED
+
+    # Seed tmp pdfs into chroma (skip on error so startup continues)
+    try:
+        populate_db_tmp()  # may call embeddings; guard it
+    except Exception as e:
+        logger.warning(f"populate_db_tmp skipped due to error: {e}")  # <<< ADDED
+
     app.state.conversation_id = await start_new_conversation(str(uuid.uuid4()))
     yield
 
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS so the React dev server can call the API  # <<< ADDED
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# >>> ADDED: register the router (prefix left empty on purpose)
+app.include_router(documents_router)  # <<< ADDED
 
 
 @app.get("/")
@@ -118,7 +161,6 @@ async def populate_chroma(request: PdfsRequest) -> TextResponse:
 async def q_db(request: QueryRequest):
     try:
         docs = query_db(request.text, request.collection_name, request.k)
-
         return {"matches": docs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -131,8 +173,42 @@ async def q_db(request: QueryRequest):
 #   "k": 3
 # }
 @app.post("/rsp_db")
-async def rsp_db(request: QueryRequest) -> TextResponse:
+async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
+        answer_form = await check_if_user_wants_form(request.text)
+        if re.search("YES", answer_form) is not None:
+            # await append_message(
+            #     app.state.conversation_id, MessageRole.user, request.text
+            # )
+            # await append_message(
+            #     app.state.conversation_id,
+            #     MessageRole.bot,
+            #     "sms sent",
+            # )
+            logger.debug("User wants a form, sending on other server...")
+            form_questions = await generate_form(request.text)
+            form_id = await create_form(
+                app.state.conversation_id, form_questions, locale="en"
+            )
+            logger.debug(f"Saved form {form_id} with {len(form_questions)} questions")
+
+            return TextResponse(text="Sent a sms")
+
+        answer_human = await check_if_user_wants_agent(request.text)
+        if re.search("YES", answer_human) is not None:
+            await append_message(
+                app.state.conversation_id, MessageRole.user, request.text
+            )
+            await append_message(
+                app.state.conversation_id,
+                MessageRole.bot,
+                "Called an agent",
+            )
+            logger.debug("User wants an agent, sending on other server...")
+
+            return TextResponse(text="Sent a sms")
+
+        logger.debug(f"Check if user wants a form : {answer_form}")
         docs = query_db(request.text, request.collection_name, request.k)
         answer_gpt = await final_response_gpt(request.text, docs)  # type: ignore
         path_pdf, number_page = await search_text_in_pdfs(
@@ -170,3 +246,15 @@ async def stop_call(request: TextRequest) -> TextResponse:
 async def conversations_by_phone(request: TextRequest):
     conversations = await get_conversations_with_messages_by_phone(request.text)
     return [conversation_to_dict(c) for c in conversations]
+
+
+@app.get("/forms")
+async def get_forms(
+    conversation_id: Union[str, None] = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+):
+    forms = await list_forms(
+        conversation_id=conversation_id, limit=limit, offset=offset
+    )
+    return [form_to_dict(f) for f in forms]
