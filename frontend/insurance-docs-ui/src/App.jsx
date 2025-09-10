@@ -1,22 +1,23 @@
-// src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import PrivateRoute from "./routes/PrivateRoute.jsx";
+import RoleRoute from "./routes/RoleRoute.jsx";
 import PublicOnly from "./routes/PublicOnly.jsx";
 
 // Layout
 import Sidebar from "./components/Sidebar";
-import Header from "./components/Header"; // remove if you don't have it
+import Header from "./components/Header"; // remove if not used
 
-// Pages (match your filenames)
+// Pages
 import Home from "./pages/Home.jsx";
 import UploadPage from "./pages/UploadPage.jsx";
 import MyDocuments from "./pages/MyDocuments.jsx";
 import RecentlyDeleted from "./pages/RecentlyDeleted.jsx";
 import Transcripts from "./pages/Transcripts.jsx";
+import Forms from "./pages/Forms.jsx"; // <-- your new forms page
 
-// ✅ Auth screens live in src/app/(auth) as .js files
+// Auth screens (.js)
 import Login from "./app/(auth)/login.js";
 import Register from "./app/register.js";
 import Forgot from "./app/forgot.js";
@@ -32,7 +33,6 @@ function AppShell() {
     <div style={{ display: "flex", minHeight: "100vh", background: "#192B37" }}>
       {!isAuthRoute && <Sidebar />}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* if you don't have <Header/>, delete the next line */}
         {!isAuthRoute && <Header />}
         <div style={{ flex: 1 }}>
           <Routes>
@@ -62,17 +62,27 @@ function AppShell() {
               }
             />
 
-            {/* Private */}
+            {/* Private (any logged user) */}
             <Route element={<PrivateRoute />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/upload" element={<UploadPage />} />
-              <Route path="/documents" element={<MyDocuments />} />
-              <Route path="/deleted" element={<RecentlyDeleted />} />
+              {/* Admin-only area */}
+              <Route element={<RoleRoute allowed={["admin"]} />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/upload" element={<UploadPage />} />
+                <Route path="/documents" element={<MyDocuments />} />
+                <Route path="/deleted" element={<RecentlyDeleted />} />
+              </Route>
+
+              {/* Normal-only area */}
+              <Route element={<RoleRoute allowed={["normal"]} />}>
+                <Route path="/forms" element={<Forms />} />
+              </Route>
+
+              {/* Shared between roles */}
               <Route path="/transcripts" element={<Transcripts />} />
             </Route>
 
             {/* Fallback */}
-            <Route path="*" element={<Home />} />
+            <Route path="*" element={<Transcripts />} />
           </Routes>
         </div>
       </div>
@@ -82,12 +92,16 @@ function AppShell() {
 
 function LoginWrapper() {
   const { login } = useAuth();
-  return <Login onLoggedIn={(token) => login(token)} />;
+  // Hardcode role for now; swap to "normal" for normal users
+  return <Login onLoggedIn={(token) => login(token, "normal")} />;
 }
+
 function RegisterWrapper() {
   const { login } = useAuth();
-  return <Register onRegistered={(token) => login(token)} />;
+  // After register, log in as normal user by default (adjust as desired)
+  return <Register onRegistered={(token) => login(token, "normal")} />;
 }
+
 function ForgotWrapper() {
   return <Forgot />;
 }

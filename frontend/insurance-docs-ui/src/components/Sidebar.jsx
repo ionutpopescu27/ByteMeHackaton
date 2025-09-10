@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 import uploadIcon from "../assets/upload.png";
 import settingsIcon from "../assets/settings.png";
 import moreIcon from "../assets/more.png";
@@ -7,9 +9,20 @@ import notificationsIcon from "../assets/notifications.png";
 import trashIcon from "../assets/trash.png";
 import documentsIcon from "../assets/documents.png";
 import dashboardIcon from "../assets/dashboard.png";
-import chatIcon from "../assets/chat.png"; // ✅ Chat icon
+import chatIcon from "../assets/chat.png";
 
 const Sidebar = () => {
+  const { role, logout } = useAuth(); // NEW: destructure logout too
+
+  const Item = ({ to, icon, label }) => (
+    <Link to={to} style={{ textDecoration: "none" }}>
+      <div className="sidebar-option" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img src={icon} alt={label} style={{ width: 20, height: 20 }} />
+        <span style={{ color: "white", fontWeight: 500 }}>{label}</span>
+      </div>
+    </Link>
+  );
+
   return (
     <aside
       className="sidebar"
@@ -24,9 +37,7 @@ const Sidebar = () => {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* 🔼 TOP SECTION: Logo + Upload + Menu Items */}
       <div>
-        {/* Logo */}
         <div
           style={{
             fontSize: "50px",
@@ -38,59 +49,47 @@ const Sidebar = () => {
           <strong>InsurAI</strong>
         </div>
 
-        {/* Upload Button */}
-        <Link to="/upload" style={{ textDecoration: "none" }}>
-          <button className="upload-button" style={{ marginBottom: "30px" }}>
-            <img src={uploadIcon} alt="Upload" style={{ width: "18px", height: "18px" }} />
-            <span>Upload</span>
-          </button>
-        </Link>
+        {/* Upload (admin only) */}
+        {role === "admin" && (
+          <Link to="/upload" style={{ textDecoration: "none" }}>
+            <button className="upload-button" style={{ marginBottom: "30px" }}>
+              <img src={uploadIcon} alt="Upload" style={{ width: 18, height: 18 }} />
+              <span>Upload</span>
+            </button>
+          </Link>
+        )}
 
-        {/* 🏠 Dashboard */}
-        <Link to="/" style={{ textDecoration: "none" }}>
-          <div className="sidebar-option">
-            <img src={dashboardIcon} alt="Dashboard" style={{ width: "20px", height: "20px" }} />
-            <span>Dashboard</span>
-          </div>
-        </Link>
+        {/* Dashboard (admin only) */}
+        {role === "admin" && <Item to="/" icon={dashboardIcon} label="Dashboard" />}
 
-        {/* 📄 My Documents */}
-        <Link to="/documents" style={{ textDecoration: "none" }}>
-          <div className="sidebar-option">
-            <img src={documentsIcon} alt="My Documents" style={{ width: "20px", height: "20px" }} />
-            <span>My Documents</span>
-          </div>
-        </Link>
+        {/* My Documents (admin only) */}
+        {role === "admin" && <Item to="/documents" icon={documentsIcon} label="My Documents" />}
 
-        {/* 💬 Transcripts */}
-        <Link to="/transcripts" style={{ textDecoration: "none" }}>
-          <div className="sidebar-option">
-            <img src={chatIcon} alt="Transcripts" style={{ width: "20px", height: "20px" }} />
-            <span>Transcripts</span>
-          </div>
-        </Link>
+        {/* Transcripts (visible to both roles) */}
+        <Item to="/transcripts" icon={chatIcon} label="Transcripts" />
 
-        {/* 🗑️ Recently Deleted */}
-        <Link to="/deleted" style={{ textDecoration: "none" }}>
-          <div className="sidebar-option">
-            <img src={trashIcon} alt="Recently Deleted" style={{ width: "20px", height: "20px" }} />
-            <span>Recently Deleted</span>
-          </div>
-        </Link>
+        {/* Forms (normal user only) */}
+        {role === "normal" && <Item to="/forms" icon={documentsIcon} label="Forms" />}
+
+        {/* Recently Deleted (admin only) */}
+        {role === "admin" && <Item to="/deleted" icon={trashIcon} label="Recently Deleted" />}
       </div>
 
-      {/* 🔽 Bottom Row of Icons */}
-      <div
+      {/* Logout button for ALL roles */}
+      <button
+        onClick={logout}
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "40px",
+          marginTop: 18,
+          background: "transparent",
+          border: "1px solid #FF5640",
+          color: "#FF5640",
+          padding: "8px 10px",
+          borderRadius: 8,
+          cursor: "pointer",
         }}
       >
-        <img src={settingsIcon} alt="Settings" style={{ width: "24px", height: "24px", cursor: "pointer" }} />
-        <img src={notificationsIcon} alt="Notifications" style={{ width: "24px", height: "24px", cursor: "pointer" }} />
-        <img src={moreIcon} alt="More" style={{ width: "24px", height: "24px", cursor: "pointer" }} />
-      </div>
+        Sign out
+      </button>
     </aside>
   );
 };
