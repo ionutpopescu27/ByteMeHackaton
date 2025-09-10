@@ -9,7 +9,7 @@ from twilio.rest import Client
 
 
 router = APIRouter()
-BASE_URL = 'https://922df4a5c81b.ngrok-free.app'
+BASE_URL = 'https://802126f966c4.ngrok-free.app'
 
 
 """
@@ -115,7 +115,7 @@ async def handle_intent_specific(SpeechResult:str = Form(None)) -> PlainTextResp
             body_preview = (res.text[:500] if "res" in locals() and hasattr(res, "text") else str(e))
             print("Backend error or non-JSON response:", body_preview)
         
-    reply = data.get('text', "Sorry, I didn't get a reply")
+    reply = data.get('text', "Sorry, I didn't get a reply dick.")
 
     if re.search("sms", reply):
         resp.redirect('/message')
