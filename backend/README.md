@@ -16,7 +16,75 @@ pip3 install -r req.txt
 fastapi dev main.py
 ```
 
+# Call Center flow process
+
+```
+               Bot responds with
+Calling number ---------------->  - 1 -> general purpose knowledge              
+                                  - 2 -> specific questions on ByteMe insurance  
+                                        |
+                                        |  
+                                        |
+                                        V
+            1. Pressed '1'                                   
+        Asking general questions
+        about insurances
+e.g. What documents do I need to submit when filing a claim?
+          |
+          |
+          V
+e.g Typically, you’ll need your policy number, a government-issued ID, proof of incident (such as a police report or medical report), and supporting bills or receipts. 
+
+2. Pressed '2'
+
+2.1. Asking specific questions about ByteMe insurance firm
+e.g. What is Motor Third Party Insurance claim process?
+Response: MOTOR THIRD PARTY (MTP) INSURANCE is a mandatory motor insurance cover required for all vehicles, vans, or motorcycles for private or commercial use, providing liability coverage against bodily injury or death of a third party.
+
+2.2. Sms + specific form on needs 
+e.g.I want to make a claim and i want the documents required to support a claim.
+Response: sms sent for your personalized form on your query , you will need to provide your identification, police accident report, and any other details the insurer may require to support your claim.
+
+2.3. Human escalation 
+e.g. I want to talk with an agent.
+Response: Called an agent
+
+```
+
 # Endpoints
+
+- All personalized forms
+
+```
+GET http://127.0.0.1:8000/forms
+
+Json Body Response:      
+[
+  {
+    "id": "46679be6-1f4f-447e-a6e3-346ccb90e071",
+    "conversation_id": "cec3a109-8c68-4974-a6b7-174d11fafc80",
+    "questions": [
+      "What is the date of the incident you are making a claim for?",
+      "What type of insurance policy do you have?",
+      "Can you provide a detailed description of what happened during the incident?",
+      "Do you have a police report related to the incident?",
+      "Are there any witnesses to the incident who can provide a statement?",
+      "Do you have any photos or videos of the incident?",
+      "Have you received any medical treatment as a result of the incident?",
+      "Are there any other documents or evidence you have that can support your claim?"
+    ],
+    "locale": "en",
+    "created_at": "2025-09-09T22:44:25.203393",
+    "conversation": {
+      "phone_number": null,
+      "label": null,
+      "started_at": "2025-09-09T22:44:18.703721",
+      "ended_at": null
+    }
+  }
+]
+    
+```
 
 - All conversations based on phone number
 

@@ -177,14 +177,17 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
         answer_form = await check_if_user_wants_form(request.text)
         if re.search("YES", answer_form) is not None:
-            # await append_message(
-            #     app.state.conversation_id, MessageRole.user, request.text
-            # )
-            # await append_message(
-            #     app.state.conversation_id,
-            #     MessageRole.bot,
-            #     "sms sent",
-            # )
+            docs = query_db(request.text, request.collection_name, request.k)
+            answer_gpt = await final_response_gpt(request.text, docs)  # type: ignore
+
+            await append_message(
+                app.state.conversation_id, MessageRole.user, request.text
+            )
+            await append_message(
+                app.state.conversation_id,
+                MessageRole.bot,
+                f"sms sent for your personalized form on your query {answer_gpt}",
+            )
             logger.debug("User wants a form, sending on other server...")
             form_questions = await generate_form(request.text)
             form_id = await create_form(
@@ -192,7 +195,9 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
             )
             logger.debug(f"Saved form {form_id} with {len(form_questions)} questions")
 
-            return TextResponse(text="Sent a sms")
+            return TextResponse(
+                text=f"sms sent for your personalized form on your query , {answer_gpt}"
+            )
 
         answer_human = await check_if_user_wants_agent(request.text)
         if re.search("YES", answer_human) is not None:
