@@ -381,28 +381,26 @@ async def check_if_user_wants_form(text: str) -> str:
     return extra
 
 
-async def generate_form_json(text: str) -> str:
+async def generate_form(text: str) -> list[str]:
     """
     We take the user's text and we generate a form on our website
     e.g. I want to make an insurance on your firm for my car ...
     """
+
     system_template = (
-        "You are a form-field generator for ByteMe Insurance. "
-        "Return STRICT JSON on a single line with EXACTLY one key: fields. "
-        "'fields' is an array (6–12 items) of question objects. "
-        "Each object MUST have: id (snake_case), question (short, single, in the input language), "
-        "type (text|number), required (boolean). "
-        "Do NOT include any other keys. "
-        "Answers must be plain strings or numbers only; DO NOT use select/date/email/phone/textarea/file/checkbox/radio. "
-        "Preserve numbers/years exactly as written. "
-        "No prose, no markdown."
+        "You are a question generator for ByteMe Insurance. "
+        "Given the customer's message, output ONLY concise questions in English, one per line. "
+        "Generate 6–10 short, specific, single-sentence questions that would help complete an insurance form or claim, "
+        "based strictly on the user's message and obvious domain needs. "
+        "Keep numbers/years exactly as written. "
+        "No bullets, no numbering, no extra text—just the questions, each on its own line."
     )
 
     user_template = (
         "Customer message:\n{text}\n"
-        "Return ONLY one-line JSON like:\n"
-        '{{"fields":[{{"id":"driver_age","question":"Age of driver","type":"number","required":true}}]}}'
+        "Return ONLY the questions, one per line, in English."
     )
+
     prompt_tmpl = ChatPromptTemplate.from_messages(
         [
             ("system", system_template),
@@ -417,7 +415,9 @@ async def generate_form_json(text: str) -> str:
     )  # type: ignore
 
     chain = prompt_tmpl | model_text | StrOutputParser()
-    extra: str = await chain.ainvoke({"text": text})
-    extra = (extra or "").strip()
+    raw: str = await chain.ainvoke({"text": text})
+    raw = (raw or "").strip()
 
-    return extra
+    # transformă în listă de întrebări
+    questions = [q.strip(" -•\t") for q in raw.splitlines() if q.strip()]
+    return questions

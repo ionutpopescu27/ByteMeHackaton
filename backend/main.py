@@ -1,6 +1,8 @@
 # main.py
 from contextlib import asynccontextmanager
 import re
+from typing import Union
+from fastapi import Query
 import uuid
 from pathlib import Path
 
@@ -26,7 +28,7 @@ from .core_functions import (
     search_text_in_pdfs,
     check_if_user_wants_form,
     check_if_user_wants_agent,
-    generate_form_json,
+    generate_form,
 )
 from .tmp_databases.query import add_pdfs, query_db, populate_db_tmp
 from .repo import (
@@ -36,6 +38,9 @@ from .repo import (
     extract_phone,
     get_conversations_with_messages_by_phone,
     conversation_to_dict,
+    create_form,
+    list_forms,
+    form_to_dict,
 )
 from .database import init_db_conversations, MessageRole
 
@@ -172,17 +177,20 @@ async def rsp_db(request: QueryRequest):  # -> TextResponse:
     try:
         answer_form = await check_if_user_wants_form(request.text)
         if re.search("YES", answer_form) is not None:
-            await append_message(
-                app.state.conversation_id, MessageRole.user, request.text
-            )
-            await append_message(
-                app.state.conversation_id,
-                MessageRole.bot,
-                "sms sent",
-            )
+            # await append_message(
+            #     app.state.conversation_id, MessageRole.user, request.text
+            # )
+            # await append_message(
+            #     app.state.conversation_id,
+            #     MessageRole.bot,
+            #     "sms sent",
+            # )
             logger.debug("User wants a form, sending on other server...")
-            js = await generate_form_json(request.text)
-            logger.debug(js)
+            form_questions = await generate_form(request.text)
+            form_id = await create_form(
+                app.state.conversation_id, form_questions, locale="en"
+            )
+            logger.debug(f"Saved form {form_id} with {len(form_questions)} questions")
 
             return TextResponse(text="Sent a sms")
 
@@ -238,3 +246,15 @@ async def stop_call(request: TextRequest) -> TextResponse:
 async def conversations_by_phone(request: TextRequest):
     conversations = await get_conversations_with_messages_by_phone(request.text)
     return [conversation_to_dict(c) for c in conversations]
+
+
+@app.get("/forms")
+async def get_forms(
+    conversation_id: Union[str, None] = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+):
+    forms = await list_forms(
+        conversation_id=conversation_id, limit=limit, offset=offset
+    )
+    return [form_to_dict(f) for f in forms]
